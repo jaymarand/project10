@@ -9,6 +9,7 @@ const RunTypes: RunType[] = ['Morning', 'Afternoon', 'ADC'];
 export default function DispatchDashboard() {
     const [runs, setRuns] = useState<DeliveryRun[]>([]);
     const [stores, setStores] = useState<Store[]>([]);
+    const [drivers, setDrivers] = useState<{id: string, name: string}[]>([]);
     const [supplyNeeds, setSupplyNeeds] = useState<SupplyNeed[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'box' | 'tractor'>('all');
@@ -141,9 +142,29 @@ export default function DispatchDashboard() {
         }
     };
 
+    // Fetch all active drivers
+    const fetchDrivers = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('drivers')
+                .select('id, first_name, last_name')
+                .eq('is_active', true)
+                .order('last_name');
+
+            if (error) throw error;
+            setDrivers(data?.map(d => ({
+                id: d.id,
+                name: `${d.first_name} ${d.last_name}`
+            })) || []);
+        } catch (error) {
+            console.error('Error fetching drivers:', error);
+            alert('Failed to fetch drivers');
+        }
+    };
+
     // Initialize data
     useEffect(() => {
-        Promise.all([fetchRuns(), fetchStores()])
+        Promise.all([fetchRuns(), fetchStores(), fetchDrivers()])
             .finally(() => setLoading(false));
 
         // Set up real-time subscription
@@ -291,8 +312,8 @@ export default function DispatchDashboard() {
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FL Driver</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preload</th>
-                                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complete</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Depart</th>
+                                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complete</th>
                                     </tr>
                                 </thead>
                                 <tbody className="divide-y divide-gray-200">
@@ -330,12 +351,18 @@ export default function DispatchDashboard() {
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{supplies?.hardlines_needed || 0}</td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{supplies?.softlines_needed || 0}</td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                        <input
-                                                            type="text"
+                                                        <select
                                                             value={run.driver || ''}
                                                             onChange={(e) => updateRunField(run.id, 'driver', e.target.value)}
-                                                            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                        />
+                                                            className="block w-40 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                        >
+                                                            <option value="">Select driver</option>
+                                                            {drivers.map(driver => (
+                                                                <option key={driver.id} value={driver.id}>
+                                                                    {driver.name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
                                                     </td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                                                         <button 
@@ -355,18 +382,18 @@ export default function DispatchDashboard() {
                                                     </td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                                                         <button 
-                                                            onClick={() => handleTimeClick(run, 'complete_time')}
-                                                            className="hover:text-blue-500 transition-colors"
-                                                        >
-                                                            {run.complete_time ? format(new Date(run.complete_time), 'HH:mm') : '-'}
-                                                        </button>
-                                                    </td>
-                                                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                        <button 
                                                             onClick={() => handleTimeClick(run, 'depart_time')}
                                                             className="hover:text-blue-500 transition-colors"
                                                         >
                                                             {run.depart_time ? format(new Date(run.depart_time), 'HH:mm') : '-'}
+                                                        </button>
+                                                    </td>
+                                                    <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
+                                                        <button 
+                                                            onClick={() => handleTimeClick(run, 'complete_time')}
+                                                            className="hover:text-blue-500 transition-colors"
+                                                        >
+                                                            {run.complete_time ? format(new Date(run.complete_time), 'HH:mm') : '-'}
                                                         </button>
                                                     </td>
                                                 </tr>
