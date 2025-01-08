@@ -4,11 +4,19 @@ import { DeliveryRun, RunType, Store, SupplyNeed, TruckType } from '../types/dis
 import { format } from 'date-fns';
 import { PlusIcon } from '@heroicons/react/24/outline';
 
+interface Driver {
+    id: string;
+    first_name: string;
+    last_name: string;
+    is_active: boolean;
+}
+
 const RunTypes: RunType[] = ['Morning', 'Afternoon', 'ADC'];
 
 export default function DispatchDashboard() {
     const [runs, setRuns] = useState<DeliveryRun[]>([]);
     const [stores, setStores] = useState<Store[]>([]);
+    const [drivers, setDrivers] = useState<Driver[]>([]);
     const [supplyNeeds, setSupplyNeeds] = useState<SupplyNeed[]>([]);
     const [loading, setLoading] = useState(true);
     const [selectedFilter, setSelectedFilter] = useState<'all' | 'box' | 'tractor'>('all');
@@ -141,9 +149,23 @@ export default function DispatchDashboard() {
         }
     };
 
+    const fetchDrivers = async () => {
+        try {
+            const { data, error } = await supabase
+                .from('drivers')
+                .select('id, first_name, last_name, is_active')
+                .eq('is_active', true);
+
+            if (error) throw error;
+            setDrivers(data || []);
+        } catch (error) {
+            console.error('Error fetching drivers:', error);
+        }
+    };
+
     // Initialize data
     useEffect(() => {
-        Promise.all([fetchRuns(), fetchStores()])
+        Promise.all([fetchRuns(), fetchStores(), fetchDrivers()])
             .finally(() => setLoading(false));
 
         // Set up real-time subscription
@@ -288,7 +310,7 @@ export default function DispatchDashboard() {
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Totes</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Hardlines Raw</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Softlines Raw</th>
-                                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">FL Driver</th>
+                                        <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Driver</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Start</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Preload</th>
                                         <th className="px-2 py-2 text-left text-xs font-medium text-gray-500 uppercase tracking-wider">Complete</th>
@@ -330,12 +352,18 @@ export default function DispatchDashboard() {
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{supplies?.hardlines_needed || 0}</td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">{supplies?.softlines_needed || 0}</td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
-                                                        <input
-                                                            type="text"
+                                                        <select
                                                             value={run.driver || ''}
                                                             onChange={(e) => updateRunField(run.id, 'driver', e.target.value)}
-                                                            className="block w-32 rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
-                                                        />
+                                                            className="block w-full rounded-md border-gray-300 shadow-sm focus:border-blue-500 focus:ring-blue-500 sm:text-sm"
+                                                        >
+                                                            <option value="">Select Driver</option>
+                                                            {drivers.map(driver => (
+                                                                <option key={driver.id} value={`${driver.first_name} ${driver.last_name}`}>
+                                                                    {driver.first_name} {driver.last_name}
+                                                                </option>
+                                                            ))}
+                                                        </select>
                                                     </td>
                                                     <td className="px-2 py-2 whitespace-nowrap text-sm text-gray-900">
                                                         <button 

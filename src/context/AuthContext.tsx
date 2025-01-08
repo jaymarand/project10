@@ -8,7 +8,7 @@ interface AuthContextType {
   user: User | null;
   userRole: UserRole | null;
   signIn: (email: string, password: string) => Promise<{ data: any; error: any }>;
-  signUp: (email: string, password: string, role: string) => Promise<{ data: any; error: any }>;
+  signUp: (email: string, password: string, role: string, firstName: string, lastName: string) => Promise<{ data: any; error: any }>;
   signOut: () => Promise<void>;
 }
 
@@ -75,16 +75,44 @@ export const AuthProvider: React.FC<{ children: React.ReactNode }> = ({ children
     return response;
   };
 
-  const signUp = async (email: string, password: string, role: string) => {
-    return supabase.auth.signUp({
-      email,
-      password,
-      options: {
-        data: {
-          role: role,
+  const signUp = async (email: string, password: string, role: string, firstName: string, lastName: string) => {
+    try {
+      const { data, error } = await supabase.auth.signUp({
+        email,
+        password,
+        options: {
+          data: {
+            role: role,
+            first_name: firstName,
+            last_name: lastName
+          }
         }
+      });
+
+      if (error) throw error;
+
+      // If user signs up as driver, create driver record
+      if (role === 'driver' && data.user) {
+        const { error: driverError } = await supabase
+          .from('drivers')
+          .insert([
+            {
+              user_id: data.user.id,
+              first_name: firstName.trim(),
+              last_name: lastName.trim(),
+              is_active: false, // Default to inactive
+              has_cdl: false // Default to no CDL
+            }
+          ]);
+
+        if (driverError) throw driverError;
       }
-    });
+
+      return { data, error: null };
+    } catch (error) {
+      console.error('Signup error:', error);
+      return { data: null, error };
+    }
   };
 
   const signOut = async () => {

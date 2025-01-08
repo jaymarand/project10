@@ -8,6 +8,8 @@ const SignupPage: React.FC = () => {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [confirmPassword, setConfirmPassword] = useState('');
+  const [firstName, setFirstName] = useState('');
+  const [lastName, setLastName] = useState('');
   const [role, setRole] = useState('driver');
   const [error, setError] = useState<string | null>(null);
   const [loading, setLoading] = useState(false);
@@ -21,10 +23,15 @@ const SignupPage: React.FC = () => {
       return;
     }
 
+    if (!firstName.trim() || !lastName.trim()) {
+      setError("First name and last name are required");
+      return;
+    }
+
     setLoading(true);
 
     try {
-      const { error } = await signUp(email, password, role);
+      const { error } = await signUp(email, password, role, firstName, lastName);
       if (error) throw error;
 
       // Show success message and redirect
@@ -63,6 +70,36 @@ const SignupPage: React.FC = () => {
           )}
           <div className="rounded-md shadow-sm -space-y-px">
             <div>
+              <label htmlFor="first-name" className="sr-only">
+                First Name
+              </label>
+              <input
+                id="first-name"
+                name="firstName"
+                type="text"
+                required
+                className="appearance-none rounded-t-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="First Name"
+                value={firstName}
+                onChange={(e) => setFirstName(e.target.value)}
+              />
+            </div>
+            <div>
+              <label htmlFor="last-name" className="sr-only">
+                Last Name
+              </label>
+              <input
+                id="last-name"
+                name="lastName"
+                type="text"
+                required
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                placeholder="Last Name"
+                value={lastName}
+                onChange={(e) => setLastName(e.target.value)}
+              />
+            </div>
+            <div>
               <label htmlFor="email-address" className="sr-only">
                 Email address
               </label>
@@ -72,7 +109,7 @@ const SignupPage: React.FC = () => {
                 type="email"
                 autoComplete="email"
                 required
-                className="appearance-none rounded-t-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Email address"
                 value={email}
                 onChange={(e) => setEmail(e.target.value)}
@@ -100,11 +137,11 @@ const SignupPage: React.FC = () => {
               </label>
               <input
                 id="confirm-password"
-                name="confirm-password"
+                name="confirmPassword"
                 type="password"
                 autoComplete="new-password"
                 required
-                className="appearance-none relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
+                className="appearance-none rounded-b-md relative block w-full px-3 py-2 border border-gray-300 placeholder-gray-500 text-gray-900 focus:outline-none focus:ring-blue-500 focus:border-blue-500 focus:z-10 sm:text-sm"
                 placeholder="Confirm Password"
                 value={confirmPassword}
                 onChange={(e) => setConfirmPassword(e.target.value)}
